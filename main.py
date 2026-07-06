@@ -1,94 +1,140 @@
 import pygame, sys, random
 from game import Game
 
-# Game Structure 
-pygame.init()
-# Using the standerd comp graphics where 0,0 is the top left corner
-SCREEN_WIDTH = 750
-SCREEN_HEIGHT = 700
-OFFSET = 50
+class initalizer:
+    def __init__(self):
+        # Game Structure 
+        pygame.init()
+        # Using the standerd comp graphics where 0,0 is the top left corner
+        self.shop_triggered = False 
+        self.SCREEN_WIDTH = 750
+        self.SCREEN_HEIGHT = 700
+        self.OFFSET = 50
 
-GREY = (29, 29, 27)
-YELLOW = (243, 216, 63)
+        self.GREY = (29, 29, 27)
+        self.YELLOW = (243, 216, 63)
 
-font = pygame.font.Font("Font/monogram.ttf", 40)
-level_surface = font.render("LEVEL 01", False, YELLOW)
-game_over_surface = font.render("GAME OVER", False, YELLOW)
-score_text_surface = font.render("SCORE", False, YELLOW)
-highscore_text_surface = font.render("HIGH-SCORE", False, YELLOW)
+        self.font = pygame.font.Font("Font/monogram.ttf", 40)
+        self.level_surface = self.font.render("LEVEL 01", False, self.YELLOW)
+        self.game_over_surface = self.font.render("GAME OVER", False, self.YELLOW)
+        self.score_text_surface = self.font.render("SCORE", False, self.YELLOW)
+        self.highscore_text_surface = self.font.render("HIGH-SCORE", False, self.YELLOW)
 
-screen = pygame.display.set_mode((SCREEN_WIDTH + OFFSET, SCREEN_HEIGHT + 2*OFFSET))
-pygame.display.set_caption("Python Space Invaders")
+        self.screen = pygame.display.set_mode((self.SCREEN_WIDTH + self.OFFSET, self.SCREEN_HEIGHT + 2*self.OFFSET))
+        pygame.display.set_caption("Python Space Invaders")
 
-clock = pygame.time.Clock()
+        self.clock = pygame.time.Clock()
 
-game = Game(SCREEN_WIDTH, SCREEN_HEIGHT, OFFSET)
+        self.game = Game(self.SCREEN_WIDTH, self.SCREEN_HEIGHT, self.OFFSET)
 
-SHOOT_LASER = pygame.USEREVENT
-pygame.time.set_timer(SHOOT_LASER, 300)
+        self.SHOOT_LASER = pygame.USEREVENT
+        pygame.time.set_timer(self.SHOOT_LASER, 300)
 
-MYSTER_SHIP = pygame.USEREVENT + 1
-pygame.time.set_timer(MYSTER_SHIP, random.randint(4000, 8000))
+        self.MYSTER_SHIP = pygame.USEREVENT + 1
+        pygame.time.set_timer(self.MYSTER_SHIP, random.randint(4000, 8000))
 
+    def event_handle(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == self.SHOOT_LASER and self.game.run and not self.shop_triggered:
+                self.game.alien_shoot_lasers()
 
-# Game Loop
-while True:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
-        if event.type == SHOOT_LASER and game.run:
-            game.alien_shoot_lasers()
+            if event.type == self.MYSTER_SHIP and self.game.run and not self.shop_triggered:
+                self.game.create_mystery_ship()
+                pygame.time.set_timer(self.MYSTER_SHIP, random.randint(4000, 8000))
+                
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_s:
+                    self.shop_triggered = not self.shop_triggered 
 
-        if event.type == MYSTER_SHIP and game.run:
-            game.create_mystery_ship()
-            pygame.time.set_timer(MYSTER_SHIP, random.randint(4000, 8000))
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_r] and self.game.run == False:
+                self.game.reset()
 
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_r] and game.run == False:
-            game.reset()
+            # Handling shop events
+            if self.shop_triggered:
+                self.shop_event_handle(event)
 
-    # Updating
-    if game.run:
-        game.spaceship_group.update()
-        game.move_aliens()
-        game.alien_lasers_group.update()
-        game.mystery_ship_group.update()
-        game.check_for_colisions()
+    def shop_event_handle(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            pass
 
-    #Drawing 
-    screen.fill(GREY)
+    def update(self):
+        if not self.shop_triggered:
+            # All game logic
+            self.game.spaceship_group.update()
+            self.game.move_aliens()
+            self.game.alien_lasers_group.update()
+            self.game.mystery_ship_group.update()
+            self.game.check_for_colisions()
 
-    # UI
-    pygame.draw.rect(screen, YELLOW, (10, 10, 780, 780), 2, 0, 60, 60, 60, 60) 
-    pygame.draw.line(screen, YELLOW, (25, 730), (775, 730), 3)
-
-    if game.run:
-        screen.blit(level_surface, (570, 740, 50, 50))
-    else:
-        screen.blit(game_over_surface, (570, 740, 50, 50))
-    
-    x = 50
-    for life in range(game.lives):
-        screen.blit(game.spaceship_group.sprite.image, (x, 745))
-        x += 50
-
-    screen.blit(score_text_surface, (40, 25, 50, 25))
-    formatted_score = str(game.score).zfill(5)
-    score_surface = font.render(str(formatted_score), False, YELLOW)
-    screen.blit(score_surface, (40, 50, 50, 50))
-    screen.blit(highscore_text_surface, (550, 15, 50, 15))
-    formatted_highscore = str(game.highscore).zfill(5)
-    highscore_surface = font.render(formatted_highscore, False, YELLOW)
-    screen.blit(highscore_surface, (625, 40, 50, 50))
-
-    game.spaceship_group.draw(screen) 
-    game.spaceship_group.sprite.lasers_group.draw(screen)
-    for obstacle in game.obstacles:
-        obstacle.block_group.draw(screen)
-    game.aliens_group.draw(screen)
-    game.alien_lasers_group.draw(screen)
-    game.mystery_ship_group.draw(screen)
+        else:
+            # Background game logic + shop animations
+            pass
         
-    pygame.display.update()
-    clock.tick(60) # Makes the clock run 60 times a second Delta Time -ish 
+    def draw(self):
+        #Drawing 
+        self.screen.fill(self.GREY)
+
+        # UI
+        pygame.draw.rect(self.screen, self.YELLOW, (10, 10, 780, 780), 2, 0, 60, 60, 60, 60) 
+        pygame.draw.line(self.screen, self.YELLOW, (25, 730), (775, 730), 3)
+
+        if self.game.run:
+            self.screen.blit(self.level_surface, (570, 740, 50, 50))
+        else:
+            self.screen.blit(self.game_over_surface, (570, 740, 50, 50))
+        
+        x = 50
+        for life in range(self.game.lives):
+            self.screen.blit(self.game.spaceship_group.sprite.image, (x, 745))
+            x += 50
+
+        self.screen.blit(self.score_text_surface, (40, 25, 50, 25))
+        self.formatted_score = str(self.game.score).zfill(5)
+        self.score_surface = self.font.render(str(self.formatted_score), False, self.YELLOW)
+        self.screen.blit(self.score_surface, (40, 50, 50, 50))
+        self.screen.blit(self.highscore_text_surface, (550, 15, 50, 15))
+        self.formatted_highscore = str(self.game.highscore).zfill(5)
+        self.highscore_surface = self.font.render(self.formatted_highscore, False, self.YELLOW)
+        self.screen.blit(self.highscore_surface, (625, 40, 50, 50))
+
+        self.game.spaceship_group.draw(self.screen) 
+        self.game.spaceship_group.sprite.lasers_group.draw(self.screen)
+        for obstacle in self.game.obstacles:
+            obstacle.block_group.draw(self.screen)
+        self.game.aliens_group.draw(self.screen)
+        self.game.alien_lasers_group.draw(self.screen)
+        self.game.mystery_ship_group.draw(self.screen)
+        if self.shop_triggered:
+            self.draw_shop()
+
+        pygame.display.flip()
+
+    def draw_shop(self):
+        overlay = pygame.Surface((self.SCREEN_WIDTH + self.OFFSET, self.SCREEN_HEIGHT + 2 * self.OFFSET), pygame.SRCALPHA)
+        overlay.fill((0,0,0,180))
+        self.screen.blit(overlay, (0,0))
+
+        # Container window
+        shop_rect = pygame.Rect(150,150,500, 400)
+        pygame.draw.rect(self.screen, (40,40,40), shop_rect, 3)
+        pygame.draw.rect(self.screen, self.YELLOW, shop_rect, 3)
+
+        # Title overlay
+        shop_title = self.font.render("SHOP", False, self.YELLOW)
+        self.screen.blit(shop_title, (280, 180))
+    
+    def run(self):  
+        # Game loop 
+        while True:
+            self.event_handle()
+            self.update()
+            self.draw()
+            self.clock.tick(60)
+
+if __name__ == "__main__":
+    game = initalizer()
+    game.run()
