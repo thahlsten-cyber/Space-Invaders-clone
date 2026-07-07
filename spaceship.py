@@ -1,5 +1,6 @@
 import pygame 
 from lazar import Lazar
+
 class SpaceShip(pygame.sprite.Sprite):
     def __init__(self, screen_width, screen_height, offset):
         super().__init__() # Initializes our SS sprite by taking the Sprite (parent class) 's own init
